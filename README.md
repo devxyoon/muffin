@@ -4,6 +4,8 @@
 ### 📈 초보 투자자들을 위한 모의 투자 플랫폼
 
 개발 기간 : 2020년 07월 27일  ~ 2020년 08월 28일
+시연 영상 : https://youtu.be/xdCWCvgVV8U
+홈페이지 : http://web.muffiny.tk.s3-website.ap-northeast-2.amazonaws.com/
 
 <br/>
 
