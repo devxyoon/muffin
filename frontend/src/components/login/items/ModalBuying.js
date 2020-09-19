@@ -120,40 +120,6 @@ const ModalBuying = (props) => {
     e.preventDefault();
     console.log(props.stockOne);
     if (props.stockOne.stockName != null) {
-      const newTransaction = {
-        userId: JSON.parse(sessionStorage.getItem("logined_user")).userId,
-        assetId: assetId,
-        stockId: stockId,
-        stockName: stockName,
-        symbol: symbol,
-        shareCount: buyCount,
-        nowPrice: nowPrice,
-        purchasePrice: purchasePrice,
-        transactionDate: new Date().toLocaleDateString(),
-        transactionType: transactionType,
-      };
-      console.log("newTransaction : ", newTransaction);
-      console.log("stockId : ", stockId);
-      console.log(newTransaction.stockId);
-      axios
-        .post(
-          url +
-            `newStock/${
-              JSON.parse(sessionStorage.getItem("logined_user")).userId
-            }`,
-          newTransaction
-        )
-        .then((response) => {
-          setAsset(response.data);
-          setBuyCount(1);
-          setPurchasePrice(nowPrice);
-          alert("매수가 완료되었습니다.");
-          props.isClose(false);
-        })
-        .catch((error) => {
-          throw error;
-        });
-    } else {
       const addTransaction = {
         userId: JSON.parse(sessionStorage.getItem("logined_user")).userId,
         assetId: assetId,
@@ -184,7 +150,6 @@ const ModalBuying = (props) => {
         .catch((error) => {
           throw error;
         });
-    }
   };
 
   const modalStyle = {

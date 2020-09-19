@@ -15,8 +15,15 @@ const StockList = () => {
   const [ownedAsset, setOwnedAsset] = useState({});
   const [buyOpen, setBuyOpen] = useState(false);
   const [sellOpen, setSellOpen] = useState(false);
-
+  const [schedule, setSchedule] = useState(true);
   const [stockOne, setStockOne] = useState({});
+
+  // pagination
+  const [pageArr, setPageArr] = useState([]);
+  const [prev, setPrev] = useState(false);
+  const [next, setNext] = useState(false);
+  const [page, setPage] = useState(1);
+  const [range, setRange] = useState(1);
   const showDetail = () => {};
 
   useEffect(() => {
@@ -44,16 +51,32 @@ const StockList = () => {
       });
   }, []);
 
+  const addzero = (n) => {
+    return n < 10 ? "0" + n : "" + n;
+  };
+
+  useEffect(() => {
+    const time = new Date();
+    let getMinutes = time.getMinutes();
+    let getSeconds = time.getSeconds();
+    let businTime = addzero(getMinutes) + addzero(getSeconds);
+
+    if (Number(businTime) % 10 == 0) {
+      setSchedule(true);
+    } else {
+      setSchedule(false);
+    }
+  });
+
+  useEffect(() => {
+    if (schedule) {
+      getAll(page, range);
+    }
+  }, [schedule]);
+
   const linkToDetail = (e) => {
     e.preventDefault();
   };
-
-  // pagination
-  const [pageArr, setPageArr] = useState([]);
-  const [prev, setPrev] = useState(false);
-  const [next, setNext] = useState(false);
-  const [page, setPage] = useState(1);
-  const [range, setRange] = useState(1);
 
   const clickNext = () => {
     getAll(pageArr[0] + 5, range + 1);

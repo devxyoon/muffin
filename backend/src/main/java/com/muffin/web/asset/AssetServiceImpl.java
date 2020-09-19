@@ -1,5 +1,6 @@
 package com.muffin.web.asset;
 
+import com.muffin.web.stock.Stock;
 import com.muffin.web.stock.StockRepository;
 import com.muffin.web.stock.StockService;
 import com.muffin.web.user.UserRepository;
@@ -35,11 +36,7 @@ interface AssetService extends GenericService<Asset> {
 
     void addStock(TransactionLogVO invoice);
 
-    void buyStock(TransactionLogVO asset); // save list 매수
-
     void sellStock(TransactionLogVO sellOption); // 매도
-
-    void updateStock(Asset update);
 
     boolean existStock(Asset asset); // 종목 존재여부
 
@@ -121,10 +118,20 @@ public class AssetServiceImpl implements AssetService {
         List result = new ArrayList();
 
         Integer nowPrice = Integer.parseInt(stockService.getOneStock(stockRepository.findById(stockId).get()).getNow().replaceAll(",", ""));
-        Asset asset  = repository.findByStock(stockRepository.findById(stockId).get());
+        ArrayList<Asset> userAsset = repository.findByUser(userRepository.findById(userId).get());
+        Stock stock = stockRepository.findById(stockId).get();
+        Asset asset = null;
+        for(Asset item : userAsset){
+            if(item.getStock() != null){
+                if(item.getStock().getStockId().equals(stock.getStockId())){
+                    asset = item;
+                    break;
+                }
+            }
+        }
 
-        int purchasePrice = asset.getPurchasePrice();
-        int shareCount = asset.getShareCount();
+        int purchasePrice = asset!=null ? asset.getPurchasePrice() : 0;
+        int shareCount = asset!=null ? asset.getShareCount() : 0;
 
         int resultEvaluatedSum = nowPrice * shareCount;
         int myShares = purchasePrice * shareCount;
@@ -182,26 +189,58 @@ public class AssetServiceImpl implements AssetService {
 
     @Override
     public void addStock(TransactionLogVO invoice) {
-        Asset asset = new Asset();
-        int recentTotal = repository.getRecentTotal(invoice.getUserId());
-        int buyCount = invoice.getShareCount();
-        int buyAmount = invoice.getPurchasePrice();
-        int newAmount = recentTotal - buyAmount;
-        int recentShareCount = repository.getOwnedShareCount(invoice.getSymbol());
-        int newShareCount = recentShareCount + buyCount;
-        int totalProfit = newAmount - recentTotal;
-        double totalProfitRatio = (double) Math.round((double) totalProfit / (double) recentTotal * 10000) / 100;
-        asset.setTransactionType(invoice.getTransactionType());
-        asset.setTransactionDate(invoice.getTransactionDate());
-        asset.setPurchasePrice(invoice.getPurchasePrice());
-        asset.setShareCount(newShareCount);
-        asset.setTotalAsset(newAmount);
-        asset.setTotalProfit(totalProfit);
-        asset.setTotalProfitRatio(totalProfitRatio);
-        asset.setUser(userRepository.findById(invoice.getUserId()).get());
-        asset.setAssetId(invoice.getAssetId());
-        transactionRepository.save(new Transaction(invoice.getStockName(), buyAmount, invoice.getTransactionDate(), invoice.getTransactionType(), invoice.getUserId(), newAmount));
-        updateStock(asset);
+        ArrayList<Asset> userAsset = repository.findByUser(userRepository.findById(invoice.getUserId()).get());
+        Stock stock = stockRepository.findById(invoice.getStockId()).get();
+        Asset asset = null;
+        for(Asset item : userAsset){
+            if(item.getStock() != null){
+                if(item.getStock().getStockId().equals(stock.getStockId())){
+                    asset = item;
+                    System.out.println(asset);
+                    break;
+                }
+            }
+        }
+        if(asset == null) {
+            System.out.println("널로 갔을 때");
+            asset = new Asset();
+            int recentTotal = repository.getRecentTotal(invoice.getUserId());
+            int buyAmount = invoice.getPurchasePrice();
+            int newAmount = recentTotal - buyAmount;
+            int totalProfit = newAmount - recentTotal;
+            double totalProfitRatio = (double) Math.round((double) totalProfit / (double) recentTotal * 10000) / 100;
+            asset.setTransactionType(invoice.getTransactionType());
+            asset.setTransactionDate(invoice.getTransactionDate());
+            asset.setPurchasePrice(invoice.getPurchasePrice());
+            asset.setShareCount(invoice.getShareCount());
+            asset.setTotalAsset(newAmount);
+            asset.setTotalProfit(totalProfit);
+            asset.setTotalProfitRatio(totalProfitRatio);
+            asset.setStock(stockRepository.findById(invoice.getStockId()).get());
+            asset.setUser(userRepository.findById(invoice.getUserId()).get());
+            transactionRepository.save(new Transaction(invoice.getStockName(), buyAmount, invoice.getTransactionDate(), invoice.getTransactionType(),
+                    invoice.getUserId(), newAmount));
+        } else {
+            System.out.println("널이 아닐 때");
+            int recentTotal = repository.getRecentTotal(invoice.getUserId());
+            int buyCount = invoice.getShareCount();
+            int buyAmount = invoice.getPurchasePrice();
+            int newAmount = recentTotal - buyAmount;
+            int recentShareCount = repository.getOwnedShareCount(invoice.getSymbol());
+            int newShareCount = recentShareCount + buyCount;
+            int totalProfit = newAmount - recentTotal;
+            double totalProfitRatio = (double) Math.round((double) totalProfit / (double) recentTotal * 10000) / 100;
+            asset.setTransactionType(invoice.getTransactionType());
+            asset.setTransactionDate(invoice.getTransactionDate());
+            asset.setPurchasePrice(invoice.getPurchasePrice());
+            asset.setShareCount(newShareCount);
+            asset.setTotalAsset(newAmount);
+            asset.setTotalProfit(totalProfit);
+            asset.setTotalProfitRatio(totalProfitRatio);
+            asset.setUser(userRepository.findById(invoice.getUserId()).get());
+            transactionRepository.save(new Transaction(invoice.getStockName(), buyAmount, invoice.getTransactionDate(), invoice.getTransactionType(), invoice.getUserId(), newAmount));
+        }
+        repository.save(asset);
     }
 
     @Override
@@ -209,34 +248,6 @@ public class AssetServiceImpl implements AssetService {
         List<TransactionVO> result = new ArrayList<>();
         List<Transaction> findLogs = transactionRepository.pagination(pagination, userId);
         return getTransactionVOS(result, findLogs);
-    }
-
-    @Override //신규 매수
-    public void buyStock(TransactionLogVO invoice) {
-        System.out.println(invoice);
-        Asset asset = new Asset();
-        int recentTotal = repository.getRecentTotal(invoice.getUserId());
-        int buyAmount = invoice.getPurchasePrice();
-        int newAmount = recentTotal - buyAmount;
-        int totalProfit = newAmount - recentTotal;
-        double totalProfitRatio = (double) Math.round((double) totalProfit / (double) recentTotal * 10000) / 100;
-        asset.setTransactionType(invoice.getTransactionType());
-        asset.setTransactionDate(invoice.getTransactionDate());
-        asset.setPurchasePrice(invoice.getPurchasePrice());
-        asset.setShareCount(invoice.getShareCount());
-        asset.setTotalAsset(newAmount);
-        asset.setTotalProfit(totalProfit);
-        asset.setTotalProfitRatio(totalProfitRatio);
-        asset.setStock(stockRepository.findById(invoice.getStockId()).get());
-        asset.setUser(userRepository.findById(invoice.getUserId()).get());
-        transactionRepository.save(new Transaction(invoice.getStockName(), buyAmount, invoice.getTransactionDate(), invoice.getTransactionType(),
-                invoice.getUserId(), newAmount));
-        repository.save(asset);
-    }
-
-    @Override // 총자산, 보유한 종목, 수량 업데이트
-    public void updateStock(Asset update) {
-        repository.updateAsset(update);
     }
 
     @Override // 매도

@@ -67,12 +67,6 @@ public class AssetController {
         return assetService.getOnesHoldings(userId);
     }
 
-    @PostMapping("/newStock/{userId}")
-    public List<TransactionLogVO> letBuyNewStock(@PathVariable Long userId, @RequestBody TransactionLogVO invoice) {
-        assetService.buyStock(invoice);
-        return assetService.getOnesHoldings(userId);
-    }
-
     @PostMapping("/sell/{userId}")
     public List<TransactionLogVO> letSellStock(@PathVariable Long userId, @RequestBody TransactionLogVO invoice) {
         assetService.sellStock(invoice);
